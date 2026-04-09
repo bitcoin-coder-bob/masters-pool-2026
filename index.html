@@ -332,12 +332,8 @@ async function fetchLeaderboard() {
   const event = data.events[0];
   const competitors = event.competitions[0].competitors;
 
-  // Count per order for tie detection
-  const orderCounts = {};
-  competitors.forEach(c => { orderCounts[c.order] = (orderCounts[c.order]||0) + 1; });
-
-  const rows = [];
-  for (const c of competitors) {
+  // First pass: parse round data for each competitor
+  const parsed = competitors.map(c => {
     const name = c.athlete.displayName;
     const score = c.score || "--";
     const rounds = c.linescores || [];
@@ -360,14 +356,32 @@ async function fetchLeaderboard() {
         thru = holes.length >= 18 ? "F" : String(holes.length);
       }
     }
+    return { name, score, today, thru, r1:rDisplays[0], r2:rDisplays[1], r3:rDisplays[2], r4:rDisplays[3], tot: hasHoles ? String(totalStrokes) : "--", order: c.order, hasHoles };
+  });
 
-    let pos;
-    if (!hasHoles) pos = "-";
-    else if (orderCounts[c.order] > 1) pos = "T" + c.order;
-    else pos = String(c.order);
-
-    rows.push({ pos, name, score, today, thru, r1:rDisplays[0], r2:rDisplays[1], r3:rDisplays[2], r4:rDisplays[3], tot: hasHoles ? String(totalStrokes) : "--", order: c.order, hasHoles });
+  // Detect ties by score among players who have started
+  const scoreGroups = {};
+  for (const p of parsed) {
+    if (!p.hasHoles) continue;
+    if (!scoreGroups[p.score]) scoreGroups[p.score] = [];
+    scoreGroups[p.score].push(p);
   }
+
+  // Assign positions: sort groups by best order, then assign sequential positions
+  const sortedGroups = Object.values(scoreGroups).sort((a,b) => a[0].order - b[0].order);
+  const posMap = new Map(); // order -> pos string
+  let nextPos = 1;
+  for (const group of sortedGroups) {
+    const tied = group.length > 1;
+    const posStr = tied ? "T" + nextPos : String(nextPos);
+    for (const p of group) posMap.set(p.order, posStr);
+    nextPos += group.length;
+  }
+
+  const rows = parsed.map(p => ({
+    ...p,
+    pos: p.hasHoles ? (posMap.get(p.order) || String(p.order)) : "-"
+  }));
 
   return { rows, eventName: event.name };
 }
