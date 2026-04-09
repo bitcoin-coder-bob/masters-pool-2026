@@ -511,7 +511,7 @@ async function refresh() {
     renderStandings(standings);
     renderLeaderboard(rows);
     document.getElementById("last-updated").textContent =
-      "Updated: " + new Date().toLocaleTimeString();
+      "Updated: " + new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit",timeZoneName:"short"});
   } catch (err) {
     console.error("Refresh failed:", err);
     document.getElementById("last-updated").textContent = "Update failed - retrying...";
