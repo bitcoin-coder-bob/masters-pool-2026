@@ -187,8 +187,6 @@ function showApp() {
   setInterval(refresh, 60000);
 }
 
-if (sessionStorage.getItem("masters_auth") === "1") showApp();
-
 // ============================================================
 // Pool data (from spreadsheet)
 // ============================================================
@@ -517,6 +515,8 @@ async function refresh() {
     document.getElementById("last-updated").textContent = "Update failed - retrying...";
   }
 }
+
+if (sessionStorage.getItem("masters_auth") === "1") showApp();
 </script>
 </body>
 </html>
