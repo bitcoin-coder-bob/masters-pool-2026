@@ -86,6 +86,9 @@
   .pick-pos.top20 { background: #eef; color: #336; }
   .pick-pos.missed { background: #fde; color: #900; }
   .pick-pos.notstarted { background: #eee; color: #666; }
+  .pick-detail { display: flex; flex-direction: column; gap: 1px; }
+  .pick-detail .pick-top { display: flex; align-items: center; gap: 4px; }
+  .pick-detail .pick-stats { font-size: 11px; color: var(--gray); font-variant-numeric: tabular-nums; }
 
   /* Leaderboard */
   .score-col { font-weight: 700; text-align: center; }
@@ -483,7 +486,11 @@ function renderStandings(standings) {
     const placeClass = rank <= 3 ? ` top3 place-${rank}` : "";
     const pickCells = e.picks.map(p => {
       const pc = posClass(p.pos);
-      return `<td class="pick-cell"><span class="golfer-name">${p.golfer}</span> <span class="pick-pos ${pc}">${p.pos}</span></td>`;
+      const money = "$" + p.adj.toLocaleString("en-US",{maximumFractionDigits:0});
+      return `<td class="pick-cell"><div class="pick-detail">
+        <div class="pick-top"><span class="golfer-name">${p.golfer}</span> <span class="pick-pos ${pc}">${p.pos}</span></div>
+        <div class="pick-stats">${p.mult.toFixed(1)}x &middot; ${money}</div>
+      </div></td>`;
     }).join("");
     html += `<tr class="${placeClass}">
       <td class="rank-col">${rank}</td>
