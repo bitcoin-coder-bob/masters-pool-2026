@@ -81,10 +81,9 @@
   .rank-col { font-weight: 700; color: var(--green-dark); text-align: center; width: 40px; }
   .money-col { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
   .pick-pos { display: inline-block; min-width: 28px; text-align: center; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 4px; }
-  .pick-pos.top5 { background: var(--gold-light); color: #8a6d0b; }
   .pick-pos.top10 { background: #d5f5e3; color: #1a7a3a; }
-  .pick-pos.top20 { background: #eef; color: #336; }
-  .pick-pos.missed { background: #fde; color: #900; }
+  .pick-pos.top25 { background: var(--gold-light); color: #8a6d0b; }
+  .pick-pos.rest { background: #fde; color: #900; }
   .pick-pos.notstarted { background: #eee; color: #666; }
   .pick-detail { display: flex; flex-direction: column; gap: 1px; }
   .pick-detail .pick-top { display: flex; align-items: center; gap: 4px; }
@@ -455,10 +454,9 @@ function posClass(pos) {
   if (pos === "-" || pos === "--") return "notstarted";
   const n = parseInt(pos.replace("T",""));
   if (isNaN(n)) return "notstarted";
-  if (n <= 5) return "top5";
   if (n <= 10) return "top10";
-  if (n <= 20) return "top20";
-  return "missed";
+  if (n <= 25) return "top25";
+  return "rest";
 }
 
 function renderLeaderboard(rows) {
