@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masters 2026 Pool</title>
+<style>
+  :root {
+    --green-dark: #006747;
+    --green-mid: #00875a;
+    --green-light: #e6f4ec;
+    --gold: #d4af37;
+    --gold-light: #f5e6b8;
+    --bg: #f5f5f0;
+    --text: #1a1a1a;
+    --gray: #666;
+    --white: #fff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.4;
+  }
+  /* --- Login --- */
+  #login-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--green-dark) 0%, #004d35 100%);
+  }
+  .login-box {
+    background: var(--white); border-radius: 12px; padding: 48px 40px; text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3); max-width: 380px; width: 90%;
+  }
+  .login-box h1 { color: var(--green-dark); font-size: 24px; margin-bottom: 6px; }
+  .login-box .subtitle { color: var(--gold); font-size: 14px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+  .login-box input[type="password"] {
+    width: 100%; padding: 12px 16px; border: 2px solid #ddd; border-radius: 8px;
+    font-size: 16px; outline: none; transition: border-color .2s;
+  }
+  .login-box input[type="password"]:focus { border-color: var(--green-mid); }
+  .login-box button {
+    width: 100%; margin-top: 16px; padding: 12px; border: none; border-radius: 8px;
+    background: var(--green-dark); color: var(--white); font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .login-box button:hover { background: var(--green-mid); }
+  .login-error { color: #c0392b; font-size: 13px; margin-top: 10px; display: none; }
+
+  /* --- Main --- */
+  #app { display: none; }
+  header {
+    background: linear-gradient(135deg, var(--green-dark) 0%, #004d35 100%);
+    color: var(--white); padding: 20px 24px; text-align: center;
+  }
+  header h1 { font-size: 28px; margin-bottom: 2px; }
+  header .event-name { color: var(--gold); font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+  .status-bar {
+    background: #004d35; color: rgba(255,255,255,.8); padding: 8px 24px;
+    font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px;
+  }
+  .status-bar .live-dot { display: inline-block; width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+  .section-title {
+    font-size: 18px; font-weight: 700; color: var(--green-dark); margin: 24px 0 12px;
+    padding-bottom: 8px; border-bottom: 3px solid var(--gold);
+  }
+  .section-title:first-child { margin-top: 0; }
+
+  /* --- Tables --- */
+  .table-wrap { overflow-x: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin-bottom: 20px; }
+  table { width: 100%; border-collapse: collapse; background: var(--white); font-size: 13px; }
+  th {
+    background: var(--green-dark); color: var(--white); padding: 10px 12px;
+    text-align: left; font-weight: 600; position: sticky; top: 0; white-space: nowrap;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; white-space: nowrap; }
+  tr:hover td { background: var(--green-light); }
+
+  /* Standings */
+  .rank-col { font-weight: 700; color: var(--green-dark); text-align: center; width: 40px; }
+  .money-col { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .pick-pos { display: inline-block; min-width: 28px; text-align: center; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-left: 4px; }
+  .pick-pos.top5 { background: var(--gold-light); color: #8a6d0b; }
+  .pick-pos.top10 { background: #d5f5e3; color: #1a7a3a; }
+  .pick-pos.top20 { background: #eef; color: #336; }
+  .pick-pos.missed { background: #fde; color: #900; }
+  .pick-pos.notstarted { background: #eee; color: #666; }
+
+  /* Leaderboard */
+  .score-col { font-weight: 700; text-align: center; }
+  .under-par { color: #c0392b; }
+  .over-par { color: #1a1a1a; }
+  .even-par { color: var(--green-dark); }
+  .thru-col, .round-col { text-align: center; color: var(--gray); }
+  .pos-col { text-align: center; font-weight: 600; }
+  .cut-line td { border-bottom: 3px dashed #e74c3c; }
+
+  .pick-cell { font-size: 12px; }
+  .pick-cell .golfer-name { font-weight: 500; }
+
+  /* Highlight the pool member's row */
+  tr.highlight td { background: var(--gold-light) !important; }
+  tr.top3 td:first-child { position: relative; }
+  tr.top3 td:first-child::before {
+    position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: 14px;
+  }
+  tr.place-1 td:first-child::before { content: ""; }
+  tr.place-2 td:first-child::before { content: ""; }
+  tr.place-3 td:first-child::before { content: ""; }
+
+  footer {
+    text-align: center; color: var(--gray); font-size: 11px; padding: 20px;
+    border-top: 1px solid #ddd; margin-top: 20px;
+  }
+  @media (max-width: 768px) {
+    table { font-size: 12px; }
+    td, th { padding: 6px 8px; }
+    header h1 { font-size: 22px; }
+    .container { padding: 12px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Masters 2026 Pool</h1>
+    <div class="subtitle">Augusta National</div>
+    <form id="login-form">
+      <input type="password" id="pw" placeholder="Enter password" autofocus>
+      <button type="submit">Enter</button>
+      <div class="login-error" id="login-error">Incorrect password</div>
+    </form>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <header>
+    <h1>Masters 2026 Pool</h1>
+    <div class="event-name" id="event-name">Masters Tournament</div>
+  </header>
+  <div class="status-bar">
+    <span><span class="live-dot"></span>Live &mdash; updates every 60s</span>
+    <span id="last-updated">Loading...</span>
+  </div>
+  <div class="container">
+    <div class="section-title">Pool Standings</div>
+    <div class="table-wrap"><table id="standings-table"><tbody></tbody></table></div>
+    <div class="section-title">Tournament Leaderboard</div>
+    <div class="table-wrap"><table id="leaderboard-table"><tbody></tbody></table></div>
+  </div>
+  <footer>Data from ESPN. Refreshes automatically.</footer>
+</div>
+
+<script>
+// ============================================================
+// Password gate - SHA-256 hash of "cliffroberts"
+// ============================================================
+const PW_HASH = "1c3191193e1b5347daed7cce1e8cd20c666450647e4f9d0e5bc44578a7ba7f4f";
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+document.getElementById("login-form").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  const pw = document.getElementById("pw").value;
+  if (await sha256(pw) === PW_HASH) {
+    sessionStorage.setItem("masters_auth", "1");
+    showApp();
+  } else {
+    document.getElementById("login-error").style.display = "block";
+  }
+});
+
+function showApp() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  refresh();
+  setInterval(refresh, 60000);
+}
+
+if (sessionStorage.getItem("masters_auth") === "1") showApp();
+
+// ============================================================
+// Pool data (from spreadsheet)
+// ============================================================
+const ENTRIES = [
+  {name:"Bob S.",picks:["Kurt Kitayama","Cameron Smith","Carlos Ortiz"]},
+  {name:"Kevin M. Sr.",picks:["Tommy Fleetwood","Shane Lowry","Patrick Reed"]},
+  {name:"Kate R.",picks:["Rory McIlroy","Tommy Fleetwood","Akshay Bhatia"]},
+  {name:"Brian R.",picks:["Tommy Fleetwood","Cameron Young","Akshay Bhatia"]},
+  {name:"Meghan C.",picks:["Rory McIlroy","Maverick McNealy","Patrick Reed"]},
+  {name:"Robbie M. Jr.",picks:["Jon Rahm","Tommy Fleetwood","Akshay Bhatia"]},
+  {name:"Robert M. Sr.",picks:["Ludvig \u00c5berg","Scottie Scheffler","Patrick Reed"]},
+  {name:"Glen F.",picks:["Bryson DeChambeau","Ludvig \u00c5berg","Tommy Fleetwood"]},
+  {name:"Mike G. Jr.",picks:["Tommy Fleetwood","Cameron Young","Chris Gotterup"]},
+  {name:"Rob C.",picks:["Cameron Young","Ludvig \u00c5berg","Tommy Fleetwood"]},
+  {name:"Frank L.",picks:["Scottie Scheffler","Xander Schauffele","Akshay Bhatia"]},
+  {name:"Sue M.",picks:["Bryson DeChambeau","Scottie Scheffler","Akshay Bhatia"]},
+  {name:"Marie S.",picks:["Jacob Bridgeman","Ludvig \u00c5berg","Akshay Bhatia"]},
+  {name:"Nick H.",picks:["Sepp Straka","Min Woo Lee","Akshay Bhatia"]},
+  {name:"Mike G.",picks:["Justin Rose","Ludvig \u00c5berg","Akshay Bhatia"]},
+  {name:"Sean C.",picks:["Bryson DeChambeau","Cameron Young","Jake Knapp"]},
+  {name:"Better-Half J. M.",picks:["Viktor Hovland","Rory McIlroy","Bryson DeChambeau"]},
+  {name:"Mini KFC",picks:["Bryson DeChambeau","Xander Schauffele","Matt Fitzpatrick"]},
+  {name:"Laszlo C.",picks:["Jake Knapp","Ludvig \u00c5berg","J.J. Spaun"]},
+  {name:"Frank D.",picks:["Xander Schauffele","Sepp Straka","Collin Morikawa"]},
+  {name:"Alyssa K.",picks:["Scottie Scheffler","Xander Schauffele","Hideki Matsuyama"]},
+  {name:"Bunny C.",picks:["Viktor Hovland","Cameron Young","J.J. Spaun"]},
+  {name:"Don D.",picks:["Bryson DeChambeau","Brooks Koepka","Collin Morikawa"]},
+  {name:"Kelly M.",picks:["Scottie Scheffler","Matt Fitzpatrick","Viktor Hovland"]},
+  {name:"Sal G. 2",picks:["Xander Schauffele","Cameron Young","Robert MacIntyre"]},
+  {name:"Beth C.",picks:["Bryson DeChambeau","Rory McIlroy","Jordan Spieth"]},
+  {name:"Trish C.",picks:["Cameron Young","Bryson DeChambeau","Chris Gotterup"]},
+  {name:"Cox Kids",picks:["Davis Riley","Maverick McNealy","Corey Conners"]},
+  {name:"Kevin M. Jr.",picks:["Shane Lowry","Ludvig \u00c5berg","Jon Rahm"]},
+  {name:"John K.",picks:["Robert MacIntyre","Corey Conners","Bryson DeChambeau"]},
+  {name:"Denise B.",picks:["Ludvig \u00c5berg","Scottie Scheffler","Jason Day"]},
+  {name:"Ken H. Too",picks:["Bryson DeChambeau","Ludvig \u00c5berg","J.J. Spaun"]},
+  {name:"Scott K.",picks:["Si Woo Kim","Bryson DeChambeau","Justin Rose"]},
+  {name:"Kevin C. Sr.",picks:["Scottie Scheffler","Xander Schauffele","Jon Rahm"]},
+  {name:"Ken H. One",picks:["Si Woo Kim","Min Woo Lee","Michael Kim"]},
+  {name:"Andy N.",picks:["Ludvig \u00c5berg","Bryson DeChambeau","Chris Gotterup"]},
+  {name:"PegEm M.",picks:["Scottie Scheffler","Bryson DeChambeau","Chris Gotterup"]},
+  {name:"Young Kevin C.",picks:["Cameron Young","Min Woo Lee","Jordan Spieth"]},
+  {name:"Chris P.",picks:["Matt Fitzpatrick","Ludvig \u00c5berg","Chris Gotterup"]},
+  {name:"Sal G. 1",picks:["Ludvig \u00c5berg","Justin Rose","Matt Fitzpatrick"]},
+  {name:"Teri D.",picks:["Scottie Scheffler","J.J. Spaun","Justin Rose"]},
+  {name:"Tom H.",picks:["Sepp Straka","Ludvig \u00c5berg","Chris Gotterup"]}
+];
+
+const MULTIPLIERS = {
+  "Scottie Scheffler":1.0,"Jon Rahm":1.184963,"Rory McIlroy":1.260964,
+  "Bryson DeChambeau":1.329716,"Ludvig \u00c5berg":1.584963,"Xander Schauffele":1.623964,
+  "Cameron Young":1.742481,"Tommy Fleetwood":1.771928,"Matt Fitzpatrick":1.80022,
+  "Collin Morikawa":1.877098,"Justin Rose":2.034963,"Jordan Spieth":2.103964,
+  "Brooks Koepka":2.103964,"Hideki Matsuyama":2.152701,"Robert MacIntyre":2.170964,
+  "Russell Henley":2.246159,"Chris Gotterup":2.263132,"Patrick Reed":2.295927,
+  "Viktor Hovland":2.311781,"Si Woo Kim":2.327294,"Min Woo Lee":2.477444,
+  "Justin Thomas":2.52068,"Patrick Cantlay":2.596445,"Adam Scott":2.757098,
+  "Akshay Bhatia":2.902197,"Sepp Straka":3.013045,"Tyrrell Hatton":3.134262,
+  "Jason Day":3.134262,"Jake Knapp":3.134262,"Shane Lowry":3.394642,
+  "Sam Burns":3.664963,"Corey Conners":3.858776,"Nicolai Hojgaard":3.976159,
+  "J.J. Spaun":4.109716,"Kurt Kitayama":4.209716,"Jacob Bridgeman":4.357294,
+  "Maverick McNealy":4.487355,"Matthew McCarty":4.601928,"Cameron Smith":4.701928,
+  "Harris English":4.837123,"Ben Griffin":4.97068,"Daniel Berger":5.07068,
+  "Gary Woodland":5.17068,"Max Homa":5.302745,"Sungjae Im":5.433445,
+  "Rasmus Hojgaard":5.591184,"Keegan Bradley":5.744642,"Marco Penge":5.940964,
+  "Harry Hall":6.040964,"Alexander Noren":6.163161,"Ryan Gerard":6.284695,
+  "Aaron Rai":6.483665,"Nick Taylor":6.583665,"Brian Harman":6.701928,
+  "Sam Stevens":6.837123,"Ryan Fox":6.986891,"Wyndham Clark":7.086891,
+  "Sergio Garcia":7.186891,"Max Greyserman":7.302745,"Dustin Johnson":7.433445,
+  "Casey Jarvis":7.562892,"Carlos Ortiz":7.691184,"Hao-Tong Li":7.844642,
+  "Tom McKibbin":7.944642,"Nicolas Echavarria":8.118062,"Kristoffer Reitan":8.218062,
+  "Rasmus Neergaard-Petersen":8.352148,"John Keefer":8.484695,"Michael Kim":8.605606,
+  "Andrew Novak":8.801928,"Aldrich Potgieter":8.91974,"Michael Brennan":9.054096,
+  "Sami Valimaki":9.298087,"Davis Riley":9.494409,"Bubba Watson":9.594409,
+  "Charl Schwartzel":9.694409,"Zach Johnson":9.794409,"Brian Campbell":10.923856,
+  "Ethan Fang":11.023856,"Danny Willett":11.123856,"Fifa Laopakdee":11.562892,
+  "Mason Howell":11.747855,"Jackson Herrington":11.847855,"Mateo Pulcini":11.947855,
+  "Naoyuki Kataoka":12.047855,"Angel Cabrera":12.147855,"Vijay Singh":12.247855,
+  "Brandon Holtz":12.423856,"Mike Weir":12.523856,"Fred Couples":12.623856,
+  "Jose Maria Olazabal":12.723856
+};
+
+const PAYOUTS = {
+  1:4200000,2:2268000,3:1428000,4:1000800,5:840000,6:756000,7:703500,8:651000,
+  9:609000,10:567000,11:525000,12:483000,13:441000,14:399000,15:378000,16:357000,
+  17:336000,18:315000,19:294000,20:273000,21:252000,22:235200,23:218400,24:201600,
+  25:184800,26:168000,27:161700,28:155400,29:149100,30:142800,31:136500,32:130200,
+  33:123900,34:118650,35:113400,36:108150,37:102900,38:98700,39:94500,40:90300,
+  41:86100,42:81900,43:77700,44:73500,45:69300,46:65100,47:60900,48:57540,49:54600,
+  50:52920,51:51240,52:49560,53:47880,54:46200,55:44520,56:42840,57:41160,58:39480,
+  59:37800,60:36120,61:34440,62:32760,63:31080,64:29400,65:27720
+};
+const MIN_PAYOUT = 26040;
+
+function getPayout(place) {
+  return PAYOUTS[place] || MIN_PAYOUT;
+}
+
+// ============================================================
+// Name normalization for matching ESPN -> spreadsheet
+// ============================================================
+function norm(name) {
+  return name.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase();
+}
+
+// Manual aliases for ESPN name mismatches
+const NAME_ALIASES = {
+  "haotong li": "hao-tong li",
+  "nico echavarria": "nicolas echavarria",
+  "alex noren": "alexander noren",
+  "johnny keefer": "john keefer",
+  "matt mccarty": "matthew mccarty",
+  "sami valimaki": "sami valimaki",
+  "sergio garcia": "sergio garcia",
+  "jose maria olazabal": "jose maria olazabal",
+  "angel cabrera": "angel cabrera"
+};
+
+function matchName(espnName) {
+  let n = norm(espnName);
+  // Strip amateur suffix
+  n = n.replace(/\s*\(a\)\s*$/, "");
+  if (NAME_ALIASES[n]) n = NAME_ALIASES[n];
+  return n;
+}
+
+function getMultiplier(espnName) {
+  const n = matchName(espnName);
+  for (const [k,v] of Object.entries(MULTIPLIERS)) {
+    if (norm(k) === n) return v;
+  }
+  return 1.0;
+}
+
+// ============================================================
+// Fetch and compute
+// ============================================================
+const ESPN_API = "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard";
+
+async function fetchLeaderboard() {
+  const resp = await fetch(ESPN_API);
+  const data = await resp.json();
+  const event = data.events[0];
+  const competitors = event.competitions[0].competitors;
+
+  // Count per order for tie detection
+  const orderCounts = {};
+  competitors.forEach(c => { orderCounts[c.order] = (orderCounts[c.order]||0) + 1; });
+
+  const rows = [];
+  for (const c of competitors) {
+    const name = c.athlete.displayName;
+    const score = c.score || "--";
+    const rounds = c.linescores || [];
+    let rDisplays = ["--","--","--","--"];
+    let today = "--", thru = "--", tot = "--";
+    let hasHoles = false, totalStrokes = 0;
+
+    for (const rd of rounds) {
+      const period = rd.period || 0;
+      const holes = rd.linescores || [];
+      const rdDisp = rd.displayValue || "--";
+
+      if (period >= 1 && period <= 4 && rd.value != null && rdDisp !== "-") {
+        rDisplays[period-1] = rdDisp;
+      }
+      if (holes.length > 0) {
+        hasHoles = true;
+        totalStrokes += holes.reduce((s,h) => s + h.value, 0);
+        today = rdDisp;
+        thru = holes.length >= 18 ? "F" : String(holes.length);
+      }
+    }
+
+    let pos;
+    if (!hasHoles) pos = "-";
+    else if (orderCounts[c.order] > 1) pos = "T" + c.order;
+    else pos = String(c.order);
+
+    rows.push({ pos, name, score, today, thru, r1:rDisplays[0], r2:rDisplays[1], r3:rDisplays[2], r4:rDisplays[3], tot: hasHoles ? String(totalStrokes) : "--", order: c.order, hasHoles });
+  }
+
+  return { rows, eventName: event.name };
+}
+
+function computeStandings(leaderboard) {
+  // Group by position to calculate tie-split payouts
+  const posGroups = {};
+  const golferPos = {};
+
+  for (const r of leaderboard) {
+    const n = matchName(r.name);
+    golferPos[n] = r.pos;
+    if (r.pos === "-" || r.pos === "--") continue;
+    const num = parseInt(r.pos.replace("T",""));
+    if (isNaN(num)) continue;
+    if (!posGroups[num]) posGroups[num] = [];
+    posGroups[num].push(n);
+  }
+
+  const golferPayouts = {};
+  for (const [posStr, golfers] of Object.entries(posGroups)) {
+    const pos = parseInt(posStr);
+    const n = golfers.length;
+    let total = 0;
+    for (let i = 0; i < n; i++) total += getPayout(pos + i);
+    const perGolfer = total / n;
+    golfers.forEach(g => { golferPayouts[g] = perGolfer; });
+  }
+
+  const standings = ENTRIES.map(entry => {
+    let totalMoney = 0;
+    const picksDetail = entry.picks.map(golfer => {
+      const gn = norm(golfer);
+      // Find matching ESPN name
+      let espnMatch = null;
+      for (const [k,v] of Object.entries(golferPos)) {
+        if (k === gn || k === (NAME_ALIASES[gn] || gn)) { espnMatch = v; break; }
+      }
+      // Try alias reverse
+      if (!espnMatch) {
+        for (const [k,v] of Object.entries(golferPos)) {
+          if (k === matchName(golfer)) { espnMatch = v; break; }
+        }
+      }
+      const pos = espnMatch || "-";
+      const mult = getMultiplier(golfer);
+      const payout = golferPayouts[matchName(golfer)] || MIN_PAYOUT;
+      const adj = payout * mult;
+      totalMoney += adj;
+      return { golfer, pos, mult, payout, adj };
+    });
+    return { name: entry.name, picks: picksDetail, totalMoney };
+  });
+
+  standings.sort((a,b) => b.totalMoney - a.totalMoney);
+  return standings;
+}
+
+// ============================================================
+// Render
+// ============================================================
+function scoreClass(s) {
+  if (!s || s === "--" || s === "-") return "";
+  if (s === "E") return "even-par";
+  if (s.startsWith("-")) return "under-par";
+  if (s.startsWith("+")) return "over-par";
+  return "";
+}
+
+function posClass(pos) {
+  if (pos === "-" || pos === "--") return "notstarted";
+  const n = parseInt(pos.replace("T",""));
+  if (isNaN(n)) return "notstarted";
+  if (n <= 5) return "top5";
+  if (n <= 10) return "top10";
+  if (n <= 20) return "top20";
+  return "missed";
+}
+
+function renderLeaderboard(rows) {
+  const table = document.getElementById("leaderboard-table");
+  let html = `<thead><tr>
+    <th style="text-align:center">POS</th><th>PLAYER</th><th style="text-align:center">SCORE</th>
+    <th style="text-align:center">TODAY</th><th style="text-align:center">THRU</th>
+    <th style="text-align:center">R1</th><th style="text-align:center">R2</th>
+    <th style="text-align:center">R3</th><th style="text-align:center">R4</th>
+    <th style="text-align:center">TOT</th>
+  </tr></thead><tbody>`;
+  for (const r of rows) {
+    html += `<tr>
+      <td class="pos-col">${r.pos}</td>
+      <td>${r.name}</td>
+      <td class="score-col ${scoreClass(r.score)}">${r.score}</td>
+      <td class="score-col ${scoreClass(r.today)}">${r.today}</td>
+      <td class="thru-col">${r.thru}</td>
+      <td class="round-col">${r.r1}</td><td class="round-col">${r.r2}</td>
+      <td class="round-col">${r.r3}</td><td class="round-col">${r.r4}</td>
+      <td class="thru-col">${r.tot}</td>
+    </tr>`;
+  }
+  html += "</tbody>";
+  table.innerHTML = html;
+}
+
+function renderStandings(standings) {
+  const table = document.getElementById("standings-table");
+  let html = `<thead><tr>
+    <th style="text-align:center;width:40px">#</th><th>PLAYER</th>
+    <th>PICK 1</th><th>PICK 2</th><th>PICK 3</th>
+    <th style="text-align:right">TOTAL</th>
+  </tr></thead><tbody>`;
+  standings.forEach((e, i) => {
+    const rank = i + 1;
+    const placeClass = rank <= 3 ? ` top3 place-${rank}` : "";
+    const pickCells = e.picks.map(p => {
+      const pc = posClass(p.pos);
+      return `<td class="pick-cell"><span class="golfer-name">${p.golfer}</span> <span class="pick-pos ${pc}">${p.pos}</span></td>`;
+    }).join("");
+    html += `<tr class="${placeClass}">
+      <td class="rank-col">${rank}</td>
+      <td style="font-weight:600">${e.name}</td>
+      ${pickCells}
+      <td class="money-col">$${e.totalMoney.toLocaleString("en-US",{maximumFractionDigits:0})}</td>
+    </tr>`;
+  });
+  html += "</tbody>";
+  table.innerHTML = html;
+}
+
+async function refresh() {
+  try {
+    const { rows, eventName } = await fetchLeaderboard();
+    document.getElementById("event-name").textContent = eventName;
+    const standings = computeStandings(rows);
+    renderStandings(standings);
+    renderLeaderboard(rows);
+    document.getElementById("last-updated").textContent =
+      "Updated: " + new Date().toLocaleTimeString();
+  } catch (err) {
+    console.error("Refresh failed:", err);
+    document.getElementById("last-updated").textContent = "Update failed - retrying...";
+  }
+}
+</script>
+</body>
+</html>
